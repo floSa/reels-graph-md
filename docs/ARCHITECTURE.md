@@ -30,8 +30,10 @@ Whisper local joint en HTTP.
 | [`ytdlp.py`](../src/reels_graph_md/ytdlp.py) | Métadonnées et téléchargement | URL | `mp4` + `vtt` éventuel |
 | [`moteur.py`](../src/reels_graph_md/moteur.py) | Pont vers le moteur de transcription du skill `watch` | fichier vidéo | segments horodatés |
 | [`fiche.py`](../src/reels_graph_md/fiche.py) | Assemblage du Markdown, évaluation de fiabilité | métadonnées + transcript | `fiches/<id>.md` |
-| [`ingest.py`](../src/reels_graph_md/ingest.py) | Orchestration, CLI `reels-ingest` | exports | vault peuplé |
+| [`inbox.py`](../src/reels_graph_md/inbox.py) | Boîte de réception du flux continu, archivage des lignes traitées | `inbox.txt` | `inbox-traite.txt` |
+| [`ingest.py`](../src/reels_graph_md/ingest.py) | Orchestration, CLI `reels-ingest` | exports + inbox | vault peuplé |
 | [`mailler.py`](../src/reels_graph_md/mailler.py) | Notes de thème et d'entité, wikilinks, CLI `reels-mailler` | frontmatter des fiches | `themes/`, `entites/` |
+| [`verifier.py`](../src/reels_graph_md/verifier.py) | Audit et réparation, CLI `reels-verifier` | journal + disque | anomalies, remise en file |
 
 ## 3. Stack technologique
 
@@ -234,8 +236,9 @@ dans le profil du navigateur au moment de l'appel.
 | Chemin réseau | Non testé automatiquement sur les trois plateformes ; Instagram et Facebook exigent des cookies | Test manuel sur un lot de 10 avant tout lot volumineux |
 | Export Facebook | Structure du fichier non confrontée à un export réel ; le filtre couvre `/reel/`, `/watch?v=`, `/share/r/`, `fb.watch/` | Valider sur un export réel, élargir `MOTIFS_CONTENU` si besoin |
 | Granularité des horodatages | Whisper peut rendre un segment unique pour un clip court, réduisant le transcript à un seul repère `[00:00]` | À mesurer sur de vrais reels ; découpage forcé si le besoin se confirme |
-| Enrichissement | Étape non outillée : les fiches sortent avec `themes: []` et `entites: []` | Écrire la procédure de traitement par lots |
+| Enrichissement | Étape manuelle par construction, non déterministe | Procédure dans [ENRICHISSEMENT.md](ENRICHISSEMENT.md) |
 | Recherche sémantique | Absente. La navigation par thème et par entité fonctionne, pas la question en langage naturel | Décision ouverte, voir [CADRAGE.md §6](CADRAGE.md#6-décisions) |
 | Carrousels photo | Ni audio ni transcript ; la fiche se réduit à la légende | Hors périmètre assumé (pas d'analyse visuelle) |
 | Détection de troncature | Un fichier vidéo incomplet passe pour un succès | Contrôle `ffprobe` de la durée contre celle des métadonnées |
+| Source de vérité | La liste de travail est recalculée à chaque lancement : les exports doivent rester disponibles | Documenté dans [GUIDE.md](GUIDE.md) ; une file persistante serait une alternative |
 | Fichier `LICENSE` | Absent du dépôt alors qu'il est public | À ajouter (MIT) sur décision explicite |

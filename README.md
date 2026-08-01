@@ -48,8 +48,10 @@ vault Obsidian lui-même ; le seul état structuré est `journal.json`.
 | [`ytdlp.py`](src/reels_graph_md/ytdlp.py) | Métadonnées et téléchargement, avec détection réelle des échecs |
 | [`moteur.py`](src/reels_graph_md/moteur.py) | Pont vers le moteur de transcription du skill `watch` |
 | [`fiche.py`](src/reels_graph_md/fiche.py) | Assemblage du Markdown, évaluation de fiabilité |
+| [`inbox.py`](src/reels_graph_md/inbox.py) | Boîte de réception du flux continu |
 | [`ingest.py`](src/reels_graph_md/ingest.py) | Orchestration — commande `reels-ingest` |
 | [`mailler.py`](src/reels_graph_md/mailler.py) | Notes de thème et d'entité — commande `reels-mailler` |
+| [`verifier.py`](src/reels_graph_md/verifier.py) | Audit et réparation du vault — commande `reels-verifier` |
 
 ```mermaid
 flowchart LR
@@ -77,6 +79,8 @@ flowchart LR
 
 | Document | Contenu |
 |---|---|
+| [docs/GUIDE.md](docs/GUIDE.md) | **Commence par là** — installation et utilisation de A à Z, questions fréquentes, dépannage |
+| [docs/ENRICHISSEMENT.md](docs/ENRICHISSEMENT.md) | L'étape 8 : procédure, règles de rédaction, nommage des thèmes et entités |
 | [docs/CADRAGE.md](docs/CADRAGE.md) | Le pourquoi : objectifs, périmètre, hypothèses, décisions, roadmap |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Le comment : composants, flux, décisions techniques, sécurité |
 | [CLAUDE.md](CLAUDE.md) | Règles de contribution du dépôt |
@@ -105,9 +109,20 @@ uv run reels-ingest exports/*.json --vault ~/Vault --lister
 # tester sur 10 reels avant d'en lancer 300
 uv run reels-ingest exports/*.json --vault ~/Vault --cookies firefox --limite 10
 
+# traiter le flux continu seul (inbox.txt du vault)
+uv run reels-ingest --vault ~/Vault --cookies firefox
+
+# ce qui reste à enrichir
+uv run reels-verifier --vault ~/Vault --a-enrichir
+
 # puis le maillage, après enrichissement des fiches
 uv run reels-mailler --vault ~/Vault
+
+# audit : le journal concorde-t-il avec le disque ?
+uv run reels-verifier --vault ~/Vault
 ```
+
+Marche à suivre complète : [docs/GUIDE.md](docs/GUIDE.md).
 
 Le script **reprend où il s'est arrêté**. On peut le couper à tout moment : le
 journal est réécrit après chaque reel. Relancer la même commande retente uniquement
@@ -147,7 +162,17 @@ Options de `reels-ingest` :
 | `--limite` | `0` (tout) | Ne traiter que les N premiers reels restants |
 | `--pause` | `3.0` | Secondes entre deux reels, anti rate-limit |
 | `--langue` | `fr` | Langue **forcée** pour Whisper |
+| `--sans-inbox` | — | Ne pas lire `inbox.txt` du vault |
 | `--lister` | — | Afficher ce qui serait traité, sans rien télécharger |
+
+L'argument positionnel est facultatif : sans lui, seule l'inbox du vault est lue.
+
+Options de `reels-verifier` :
+
+| Option | Effet |
+|---|---|
+| `--reparer` | Redéclasser en échec les entrées que le disque contredit, pour qu'elles repassent |
+| `--a-enrichir` | Lister les chemins des fiches restant à enrichir, un par ligne |
 
 Variables d'environnement :
 
@@ -166,7 +191,8 @@ Codes de sortie de `reels-ingest` : `0` terminé, `2` fichier d'export introuvab
 uv run pytest
 ```
 
-**39 tests** sur les fonctions pures : extraction et normalisation des liens,
+**71 tests** sur les fonctions pures : extraction et normalisation des liens,
+déduplication native, audit et réparation du vault, boîte de réception,
 échappement YAML, évaluation de fiabilité, maillage et son idempotence. Les étapes
 réseau ne sont pas testées automatiquement — voir
 [docs/CADRAGE.md](docs/CADRAGE.md).
@@ -232,6 +258,8 @@ Vault/
 ├── reels/      insta_DXabc123.mp4       la vidéo, conservée
 ├── themes/     politique.md             généré, wikilinks
 ├── entites/    Assemblée nationale.md   généré, wikilinks
+├── inbox.txt                            flux continu, alimenté par le mobile
+├── inbox-traite.txt                     archive des lignes déjà traitées
 └── journal.json
 ```
 
@@ -309,8 +337,11 @@ sont retentés à chaque relance.
   plusieurs jours.
 - **Le chemin réseau des trois plateformes n'est pas encore validé**, et la
   structure de l'export Facebook n'a pas été confrontée à un export réel.
-- **L'étape 8 n'est pas outillée** : les fiches sortent avec `themes: []` et
-  `entites: []`.
+- **Les exports doivent rester disponibles.** La liste de travail est recalculée
+  à chaque lancement ; le journal enregistre ce qui est fait, pas ce qui reste.
+- **L'étape 8 reste manuelle** : les fiches sortent avec `themes: []` et
+  `entites: []`, à remplir par lots selon
+  [docs/ENRICHISSEMENT.md](docs/ENRICHISSEMENT.md).
 - **La recherche sémantique n'est pas là.** La navigation par thème et par entité
   fonctionne ; retrouver un reel à partir d'une question en langage naturel reste à
   concevoir — voir [docs/CADRAGE.md](docs/CADRAGE.md).

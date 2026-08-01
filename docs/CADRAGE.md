@@ -159,12 +159,13 @@ transcription.
 1. **Validation réseau** — un lot de 10 reels par plateforme, avec cookies.
    Confronter le filtre d'URL à un export Facebook réel. *Bloquant pour la suite.*
 2. **Outillage de l'enrichissement** — procédure de traitement par lots, avec la
-   règle éditoriale et la contrainte de cohérence des libellés.
+   règle éditoriale et la contrainte de cohérence des libellés. *Fait, voir
+   [ENRICHISSEMENT.md](ENRICHISSEMENT.md).*
 3. **Passage à l'échelle** — lots de ~50 étalés, mesure du taux d'échec et de la
    durée par reel.
 4. **Recherche** — trancher §6 sur la base des mesures de l'étape 3.
-5. **Flux continu** — raccourci de partage mobile vers `inbox.txt` et déclenchement
-   périodique.
+5. **Flux continu** — `inbox.txt` lue et archivée automatiquement. *Fait côté
+   code ; reste à poser le raccourci de partage mobile.*
 
 ---
 
