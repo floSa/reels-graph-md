@@ -1,6 +1,6 @@
 """Tests des fonctions pures d'écriture de fiche et de maillage."""
 
-from reels_md import fiche, mailler
+from reels_graph_md import fiche, mailler
 
 
 class TestYamlSur:

@@ -64,7 +64,7 @@ wheels = [
 ]
 
 [[package]]
-name = "reels-md"
+name = "reels-graph-md"
 version = "0.1.0"
 source = { editable = "." }
 
