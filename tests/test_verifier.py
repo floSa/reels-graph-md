@@ -194,3 +194,52 @@ class TestPostSansFormatVideo:
         from reels_graph_md import ytdlp
         with pytest.raises(ytdlp.ErreurYtdlp):
             self._lancer(monkeypatch, tmp_path, "HTTP Error 429: Too Many Requests")
+
+
+class TestFiltreHallucinations:
+    """Whisper comble une piste sans parole par des formules de générique.
+    Le danger n'est pas le bruit mais la vraisemblance."""
+
+    def _filtrer(self, textes):
+        from reels_graph_md.moteur import filtrer_hallucinations
+        segs = [{"start": i, "end": i + 1, "text": t} for i, t in enumerate(textes)]
+        gardes, retires = filtrer_hallucinations(segs)
+        return [s["text"] for s in gardes], retires
+
+    def test_retire_les_formes_rencontrees_en_reel(self):
+        gardes, retires = self._filtrer([
+            "Sous-titres par Jérémy Diaz",
+            "Sous-titrage ST' 501",
+            "Sous-titrage Société Radio-Canada",
+        ])
+        assert gardes == [] and retires == 3
+
+    def test_retire_les_formes_anglaises_et_les_sites(self):
+        gardes, _ = self._filtrer([
+            "Subtitles by the Amara.org community",
+            "Thanks for watching!",
+            "SousTitreur.com",
+        ])
+        assert gardes == []
+
+    def test_conserve_un_vrai_transcript(self):
+        vrais = [
+            "Les députés ont adopté le texte hier soir.",
+            "Trois cent douze voix pour.",
+        ]
+        gardes, retires = self._filtrer(vrais)
+        assert gardes == vrais and retires == 0
+
+    def test_ne_coupe_pas_une_phrase_qui_parle_de_sous_titres(self):
+        # Un reel qui traite réellement du sous-titrage doit survivre : le motif
+        # est ancré en début de segment, pas cherché n'importe où.
+        phrase = "On va parler des sous-titres automatiques et de leurs limites."
+        gardes, _ = self._filtrer([phrase])
+        assert gardes == [phrase]
+
+    def test_melange_reel_et_hallucination(self):
+        gardes, retires = self._filtrer([
+            "Bonjour à tous, aujourd'hui on parle du budget.",
+            "Sous-titrage ST' 501",
+        ])
+        assert len(gardes) == 1 and retires == 1

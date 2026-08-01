@@ -16,6 +16,7 @@ claude-skills ailleurs.
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -71,6 +72,37 @@ def url_serveur() -> str:
     return whisper().local_base_url()
 
 
+# Whisper comble une piste sans parole par des formules de générique apprises
+# sur des corpus sous-titrés. Rencontré cinq fois sur le stock réel, toujours
+# sur des vidéos muettes ou purement musicales :
+#     « Sous-titres par Jérémy Diaz »      « Sous-titrage ST' 501 »
+# Le danger n'est pas le bruit mais la vraisemblance : une fiche vide se repère,
+# une fiche faussement remplie non. On filtre donc ces segments avant qu'ils
+# n'atteignent la fiche.
+HALLUCINATIONS = re.compile(
+    r"""^\W*(
+        sous[-\s]?titr(es?|age|é\s+par)\b
+      | subtitles?\s+by\b
+      | amara\.org
+      | sous[-\s]?titreur\.com
+      | merci\s+d'avoir\s+regard[ée]
+      | thanks?\s+for\s+watching
+      | abonnez[-\s]vous\W*$
+    )""",
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def filtrer_hallucinations(segments: list[dict]) -> tuple[list[dict], int]:
+    """Retire les segments qui sont des formules de générique inventées.
+
+    Renvoie (segments conservés, nombre de segments retirés). Le compte permet
+    à l'appelant de le signaler plutôt que de le taire.
+    """
+    gardes = [s for s in segments if not HALLUCINATIONS.match(s.get("text", ""))]
+    return gardes, len(segments) - len(gardes)
+
+
 def transcrire(video: Path, audio_temp: Path, langue: str = "fr") -> list[dict]:
     """Transcrit une vidéo locale et renvoie des segments {start, end, text}.
 
@@ -102,6 +134,13 @@ def transcrire(video: Path, audio_temp: Path, langue: str = "fr") -> list[dict]:
         if "no transcript segments" in message or "no audio" in message:
             return []
         raise RuntimeError(f"transcription impossible : {message}") from exc
+
+    segments, retires = filtrer_hallucinations(segments)
+    if retires:
+        print(
+            f"[moteur] {retires} segment(s) de générique halluciné(s) retiré(s)",
+            file=sys.stderr,
+        )
     return segments
 
 
