@@ -2,7 +2,7 @@
 
 Cette étape est purement mécanique : elle assemble ce que le pipeline a récolté,
 sans jamais rédiger. La synthèse, les thèmes et les entités sont ajoutés ensuite
-par Claude (étape 8), qui remplit les sections laissées en attente.
+par le LLM (étape 8), qui remplit les sections laissées en attente.
 
 Sur les horodatages : contrairement à YouTube, Instagram, TikTok et Facebook
 n'honorent pas de paramètre `?t=` dans leurs URLs. Un lien horodaté vers le post
@@ -94,6 +94,11 @@ def construire(
     if re.fullmatch(r"\d{8}", str(date_pub)):
         date_pub = f"{date_pub[:4]}-{date_pub[4:6]}-{date_pub[6:]}"
 
+    # yt-dlp rend une durée flottante ("62.367000579833984"), illisible dans un
+    # frontmatter et sans intérêt à la milliseconde près.
+    duree = meta.get("duration")
+    duree = round(float(duree)) if isinstance(duree, (int, float)) else ""
+
     fiabilite = evaluer_fiabilite(transcript, legende)
 
     entete = "\n".join(
@@ -104,7 +109,7 @@ def construire(
             f"auteur: {_yaml(auteur)}",
             f"compte_url: {_yaml(meta.get('uploader_url') or meta.get('channel_url') or '')}",
             f"date_publication: {_yaml(date_pub)}",
-            f"duree_s: {_yaml(meta.get('duration') or '')}",
+            f"duree_s: {_yaml(duree)}",
             f"langue: {_yaml(meta.get('language') or 'fr')}",
             f"vues: {_yaml(meta.get('view_count') or '')}",
             f"source_transcript: {_yaml(source_transcript)}",

@@ -122,3 +122,21 @@ class TestMaillage:
         fiches = mailler.collecter(dossier)
         chemin = mailler.ecrire_note_index(vault / "themes", "politique", fiches, "theme")
         assert "[[insta_A|Le titre A]]" in chemin.read_text(encoding="utf-8")
+
+
+class TestDuree:
+    def test_arrondie_a_la_seconde(self):
+        # yt-dlp rend un flottant : 62.367000579833984 dans un frontmatter est
+        # illisible et sans intérêt à la milliseconde près.
+        rendu = fiche.construire(
+            identifiant="x", url="https://instagram.com/reel/X", plateforme="instagram",
+            meta={"duration": 62.367000579833984}, transcript="",
+        )
+        assert mailler.lire_frontmatter(rendu)["duree_s"] == "62"
+
+    def test_duree_absente(self):
+        rendu = fiche.construire(
+            identifiant="x", url="https://instagram.com/reel/X", plateforme="instagram",
+            meta={}, transcript="",
+        )
+        assert mailler.lire_frontmatter(rendu)["duree_s"] == ""

@@ -76,6 +76,9 @@ def verifier_outils() -> None:
         )
 
 
+_cache_cookies: dict[str, list[str]] = {}
+
+
 def sous_wsl() -> bool:
     try:
         return "microsoft" in Path("/proc/version").read_text(encoding="utf-8").lower()
@@ -157,6 +160,9 @@ def options_cookies(cookies: str | None) -> list[str]:
     """
     if not cookies:
         return []
+    if cookies in _cache_cookies:
+        return _cache_cookies[cookies]
+
     arguments, message = resoudre_cookies(
         cookies,
         profil_linux=profil_firefox_linux(),
@@ -164,6 +170,10 @@ def options_cookies(cookies: str | None) -> list[str]:
     )
     if message:
         print(f"[cookies] {message}", file=sys.stderr)
+    # La résolution est appelée deux fois par reel (métadonnées, puis
+    # téléchargement) : sans mémoïsation, le message double à chaque reel et
+    # noie la sortie utile sous 600 lignes sur un stock de 300.
+    _cache_cookies[cookies] = arguments
     return arguments
 
 
