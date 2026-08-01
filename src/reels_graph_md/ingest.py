@@ -24,6 +24,13 @@ from .journal import Journal
 
 PAUSE_DEFAUT = 3.0
 
+# Un échec isolé est banal — post supprimé ou passé en privé, on en attend
+# environ un tiers sur un stock ancien. Une série d'échecs consécutifs, elle,
+# ne l'est pas : c'est un rate-limit, une session expirée ou le serveur de
+# transcription tombé. Continuer ne ferait qu'aggraver le blocage et brûler la
+# liste en la marquant en échec.
+ECHECS_CONSECUTIFS_MAX = 5
+
 
 def log(message: str) -> None:
     print(f"[{datetime.now():%H:%M:%S}] {message}", flush=True)
@@ -219,6 +226,7 @@ def main() -> int:
         return 3
 
     reussites, echecs, alias = 0, 0, 0
+    consecutifs, interrompu = 0, False
     fiabilites: dict[str, int] = {}
 
     for numero, url in enumerate(a_faire, 1):
@@ -227,6 +235,7 @@ def main() -> int:
             details = _traiter(url, dossiers, carnet, args.cookies, args.langue)
             carnet.succes(url, **details)
             reussites += 1
+            consecutifs = 0
             if details.get("alias_de"):
                 alias += 1
                 log(f"    doublon — même reel que {details['alias_de']}, rien téléchargé")
@@ -241,6 +250,14 @@ def main() -> int:
             log(f"    échec : {erreur}")
             carnet.echec(url, str(erreur))
             echecs += 1
+            consecutifs += 1
+            if consecutifs >= ECHECS_CONSECUTIFS_MAX:
+                log(f"{consecutifs} échecs consécutifs — arrêt du lot.")
+                log("Signature d'un rate-limit, d'une session expirée ou du serveur")
+                log("de transcription tombé. Attends, vérifie, puis relance : le")
+                log("journal reprendra exactement ici.")
+                interrompu = True
+                break
 
         if numero < len(a_faire):
             time.sleep(args.pause)
@@ -265,7 +282,7 @@ def main() -> int:
     if echecs:
         log("Relance la même commande pour retenter uniquement les échecs.")
 
-    return 0
+    return 4 if interrompu else 0
 
 
 if __name__ == "__main__":

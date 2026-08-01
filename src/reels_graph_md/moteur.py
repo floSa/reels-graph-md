@@ -77,11 +77,31 @@ def transcrire(video: Path, audio_temp: Path, langue: str = "fr") -> list[dict]:
     La langue est **forcée**, pas détectée. Sur un clip de 20 secondes avec de la
     musique, l'autodétection de Whisper se trompe régulièrement, et un transcript
     français décodé comme de l'anglais est inexploitable.
+
+    Le moteur de `watch` signale toutes ses erreurs par `SystemExit`, y compris
+    l'absence de segments. C'est cohérent pour un script appelé en ligne de
+    commande sur une vidéo, mais destructeur ici : `SystemExit` dérive de
+    `BaseException`, donc le `except Exception` qui isole chaque reel ne
+    l'attrape pas, et **un seul reel muet tuait tout le lot**. Constaté au 9e
+    reel d'un lot de 50.
+
+    On traduit donc :
+      - « aucun segment » n'est pas une erreur mais un résultat — un reel
+        musical n'a rien à transcrire. La fiche sera étiquetée `vide` ou
+        `legende_seule` ;
+      - toute autre panne devient une exception ordinaire, qui fait échouer ce
+        reel-là et lui seul.
     """
     module = whisper()
     if langue:
         os.environ["WHISPER_LANGUAGE"] = langue
-    segments, _ = module.transcribe_video(str(video), audio_temp)
+    try:
+        segments, _ = module.transcribe_video(str(video), audio_temp)
+    except SystemExit as exc:
+        message = str(exc)
+        if "no transcript segments" in message or "no audio" in message:
+            return []
+        raise RuntimeError(f"transcription impossible : {message}") from exc
     return segments
 
 

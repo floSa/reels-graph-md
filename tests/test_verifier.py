@@ -119,3 +119,42 @@ class TestReparation:
         _reel_complet(vault, enrichi=False)
         assert verifier.reparer(vault, verifier.auditer(vault)) == 0
         assert Journal(vault / "journal.json").est_fait("https://instagram.com/reel/insta_A")
+
+
+class TestCoupeCircuit:
+    """Un échec isolé est banal ; une série ne l'est pas."""
+
+    def test_seuil_documente(self):
+        from reels_graph_md.ingest import ECHECS_CONSECUTIFS_MAX
+        assert ECHECS_CONSECUTIFS_MAX >= 3
+
+
+class TestTranscriptionMuette:
+    """Le moteur de watch signale tout par SystemExit, y compris l'absence de
+    segments — ce qui tuait le lot entier, SystemExit n'étant pas une Exception."""
+
+    def _moteur(self, monkeypatch, exc):
+        from reels_graph_md import moteur
+
+        class FauxWhisper:
+            @staticmethod
+            def transcribe_video(video, audio):
+                raise exc
+
+        monkeypatch.setattr(moteur, "whisper", lambda: FauxWhisper)
+        return moteur
+
+    def test_absence_de_segments_donne_une_liste_vide(self, monkeypatch, tmp_path):
+        moteur = self._moteur(monkeypatch, SystemExit("Whisper returned no transcript segments"))
+        assert moteur.transcrire(tmp_path / "v.mp4", tmp_path / "a.mp3") == []
+
+    def test_piste_audio_absente_donne_une_liste_vide(self, monkeypatch, tmp_path):
+        moteur = self._moteur(monkeypatch, SystemExit("ffmpeg produced no audio — video may have no audio track"))
+        assert moteur.transcrire(tmp_path / "v.mp4", tmp_path / "a.mp3") == []
+
+    def test_vraie_panne_devient_une_exception_ordinaire(self, monkeypatch, tmp_path):
+        import pytest
+        moteur = self._moteur(monkeypatch, SystemExit("Local Whisper server unreachable"))
+        # RuntimeError, pas SystemExit : le lot doit survivre et ne perdre que ce reel.
+        with pytest.raises(RuntimeError, match="transcription impossible"):
+            moteur.transcrire(tmp_path / "v.mp4", tmp_path / "a.mp3")
