@@ -104,7 +104,14 @@ def appliquer(chemin: Path, donnees: dict) -> None:
 
     texte = _remplacer_liste(texte, "themes", themes)
     texte = _remplacer_liste(texte, "entites", noms)
-    texte = re.sub(r"^statut: brut$", "statut: enrichi", texte, count=1, flags=re.MULTILINE)
+    # Une fiche que le traitement automatique n'a pas pu exploiter — vidéo muette,
+    # langue non couverte, contenu purement visuel — reçoit un statut distinct
+    # plutôt que d'être noyée parmi les fiches enrichies. Elle reste une vraie
+    # fiche, avec sa vidéo, et devient retrouvable pour une reprise à la main.
+    revue = bool(donnees.get("revue")) or "non exploitable" in themes
+    statut = "a_verifier" if revue else "enrichi"
+    texte = re.sub(r"^statut: brut$", f"statut: {statut}", texte, count=1, flags=re.MULTILINE)
+    texte = re.sub(r"^statut: (?:enrichi|a_verifier)$", f"statut: {statut}", texte, count=1, flags=re.MULTILINE)
 
     phrase = str(donnees["phrase"]).strip()
     texte = re.sub(

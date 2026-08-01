@@ -31,6 +31,7 @@ CATEGORIES = {
     "fiche_orpheline": "fiches sur le disque absentes du journal",
     "video_orpheline": "vidéos sur le disque qu'aucune fiche n'utilise",
     "a_enrichir": "fiches sans thème ni entité (étape d'enrichissement)",
+    "a_verifier": "fiches marquées pour une reprise manuelle (contenu non exploitable)",
 }
 
 REPARABLES = ("fiche_manquante", "video_manquante", "alias_orphelin")
@@ -81,6 +82,8 @@ def auditer(vault: Path) -> dict[str, list[str]]:
             entete = lire_frontmatter(chemin.read_text(encoding="utf-8", errors="ignore"))
             if not entete.get("themes") and not entete.get("entites"):
                 resultats["a_enrichir"].append(chemin.name)
+            if entete.get("statut") == "a_verifier":
+                resultats["a_verifier"].append(chemin.name)
 
     if dossier_reels.is_dir():
         for chemin in sorted(dossier_reels.iterdir()):
@@ -143,7 +146,7 @@ def main() -> int:
         elements = resultats[cle]
         if not elements:
             continue
-        if cle != "a_enrichir":
+        if cle not in ("a_enrichir", "a_verifier"):
             anomalies += len(elements)
         print(f"\n{len(elements)} {libelle}")
         for element in elements[:10]:
@@ -151,7 +154,7 @@ def main() -> int:
         if len(elements) > 10:
             print(f"  … et {len(elements) - 10} autres")
 
-    if not anomalies and not resultats["a_enrichir"]:
+    if not anomalies and not resultats["a_enrichir"] and not resultats["a_verifier"]:
         print("Vault cohérent : le journal et le disque concordent.")
         return 0
 

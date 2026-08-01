@@ -100,3 +100,30 @@ class TestTitre:
         c = _fiche_brute(tmp_path)
         enrichir.appliquer(c, LOT)
         assert "# Un titre" in c.read_text(encoding="utf-8")
+
+
+class TestRevueManuelle:
+    """Une fiche que le traitement n'a pas pu exploiter reste une vraie fiche,
+    mais doit rester retrouvable pour une reprise à la main."""
+
+    def test_theme_non_exploitable_marque_la_fiche(self, tmp_path):
+        c = _fiche_brute(tmp_path)
+        enrichir.appliquer(c, {**LOT, "themes": ["non exploitable"]})
+        assert mailler.lire_frontmatter(c.read_text(encoding="utf-8"))["statut"] == "a_verifier"
+
+    def test_champ_revue_explicite(self, tmp_path):
+        c = _fiche_brute(tmp_path)
+        enrichir.appliquer(c, {**LOT, "revue": True})
+        assert mailler.lire_frontmatter(c.read_text(encoding="utf-8"))["statut"] == "a_verifier"
+
+    def test_fiche_normale_reste_enrichie(self, tmp_path):
+        c = _fiche_brute(tmp_path)
+        enrichir.appliquer(c, LOT)
+        assert mailler.lire_frontmatter(c.read_text(encoding="utf-8"))["statut"] == "enrichi"
+
+    def test_repassage_en_enrichi_si_corrigee(self, tmp_path):
+        # Reprise à la main : la fiche redevient exploitable, le statut suit.
+        c = _fiche_brute(tmp_path)
+        enrichir.appliquer(c, {**LOT, "themes": ["non exploitable"]})
+        enrichir.appliquer(c, LOT)
+        assert mailler.lire_frontmatter(c.read_text(encoding="utf-8"))["statut"] == "enrichi"
