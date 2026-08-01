@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Exports de données des plateformes : ils contiennent des URLs personnelles
+# et parfois bien plus. Ils ne doivent jamais partir dans un dépôt.
+exports/
+*saved_posts*.json
+*saved_collections*.json
+user_data_tiktok*.json
+cookies.txt
+
+# Vault de travail, s'il est créé dans le projet
+Vault/
+vault/

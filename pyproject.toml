@@ -1,0 +1,26 @@
+[project]
+name = "reels-graph"
+version = "0.1.0"
+description = "Transforme des reels sauvegardés (Instagram / TikTok / Facebook) en vault Obsidian consultable"
+requires-python = ">=3.12"
+
+# Aucune dépendance Python : tout passe par des binaires externes (yt-dlp,
+# ffmpeg) et par le moteur de transcription de `watch`, lui-même en stdlib pure.
+dependencies = []
+
+[project.scripts]
+reels-ingest = "reels_graph.ingest:main"
+reels-mailler = "reels_graph.mailler:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/reels_graph"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
