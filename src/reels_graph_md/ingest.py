@@ -19,7 +19,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from . import fiche, liens, moteur, ytdlp
+from . import fiche, inbox, liens, moteur, ytdlp
 from .journal import Journal
 
 PAUSE_DEFAUT = 3.0
@@ -149,7 +149,12 @@ def main() -> int:
         prog="reels-ingest",
         description="Transforme des exports Instagram / TikTok / Facebook en fiches Markdown.",
     )
-    parseur.add_argument("fichiers", nargs="+", help="exports de données (json, txt, csv, html)")
+    parseur.add_argument(
+        "fichiers",
+        nargs="*",
+        help="exports de données (json, txt, csv, html). "
+        "Facultatif : sans argument, seule l'inbox du vault est lue.",
+    )
     parseur.add_argument("--vault", default=str(Path.home() / "Vault"))
     parseur.add_argument(
         "--cookies",
@@ -160,6 +165,11 @@ def main() -> int:
     parseur.add_argument("--limite", type=int, default=0, help="ne traiter que les N premiers")
     parseur.add_argument("--pause", type=float, default=PAUSE_DEFAUT, help="secondes entre deux reels")
     parseur.add_argument("--langue", default="fr", help="langue forcée pour Whisper")
+    parseur.add_argument(
+        "--sans-inbox",
+        action="store_true",
+        help=f"ne pas lire {inbox.NOM_INBOX} du vault",
+    )
     parseur.add_argument(
         "--lister",
         action="store_true",
@@ -176,7 +186,17 @@ def main() -> int:
         log("Fichier(s) introuvable(s) : " + ", ".join(manquants))
         return 2
 
-    trouves = liens.extraire_plusieurs([Path(f) for f in args.fichiers])
+    sources = [Path(f) for f in args.fichiers]
+    boite = inbox.chemin_inbox(vault)
+    if not args.sans_inbox and boite.exists():
+        sources.append(boite)
+        log(f"Boîte de réception lue : {boite}")
+
+    if not sources:
+        log(f"Aucune source. Passe un export en argument, ou alimente {boite}.")
+        return 2
+
+    trouves = liens.extraire_plusieurs(sources)
     a_faire = carnet.a_traiter(trouves)
     if args.limite:
         a_faire = a_faire[: args.limite]
@@ -224,6 +244,14 @@ def main() -> int:
 
         if numero < len(a_faire):
             time.sleep(args.pause)
+
+    if not args.sans_inbox:
+        # Relecture de l'inbox au moment de l'archivage, jamais réécriture depuis
+        # ce qu'on avait lu au départ : le raccourci mobile a pu y ajouter des
+        # URLs pendant que le lot tournait.
+        archivees = inbox.consommer(vault, {u for u in a_faire if carnet.est_fait(u)})
+        if archivees:
+            log(f"{archivees} ligne(s) déplacée(s) vers {inbox.NOM_ARCHIVE}.")
 
     log(f"Terminé — {reussites} réussites, {echecs} échecs.")
     if alias:
