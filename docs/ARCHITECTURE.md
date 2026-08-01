@@ -109,11 +109,43 @@ flowchart TD
 Entre la fiche brute et le maillage, un LLM lit les fiches par lots et remplit
 `themes`, `entites` et les sections de synthèse. C'est la seule étape non
 automatisée, et la seule qui consomme du quota. Le maillage lit ensuite le
-frontmatter, pas la prose : voir la décision correspondante en §6.
+frontmatter, pas la prose : voir la décision correspondante en §7.
 
 ---
 
-## 5. Système de fichiers
+## 5. Cycle de vie des processus
+
+Distinction importante pour l'exploitation : le projet n'héberge **aucun service
+tournant**. Ce qui tourne en permanence est une dépendance externe.
+
+| Élément | Nature | Durée de vie | Arrêt |
+|---|---|---|---|
+| `reels-ingest` | Traitement par lots | Le temps du lot | Fin naturelle ou `Ctrl+C` (code `130`, reprise par le journal) |
+| `reels-mailler` | Traitement par lots | Quelques secondes | Fin naturelle |
+| Serveur Whisper | Conteneur Docker, **hors dépôt** | Permanente | `speaches-up.sh down` |
+
+Le serveur Whisper est déclaré `restart: unless-stopped` dans son compose. Il
+redémarre donc à chaque démarrage du démon Docker tant qu'il n'a pas été
+explicitement supprimé. Conséquences pratiques :
+
+- un `docker stop` ne suffit pas — le conteneur revient ;
+- il occupe le **port 8000** en continu ;
+- en mode GPU, il retient la mémoire vidéo du modèle même au repos.
+
+C'est aussi ce qui rend le préflight de `reels-ingest` utile : le serveur est
+supposé déjà là, et le script sort en code `3` avec l'instruction de démarrage
+plutôt que d'échouer au premier appel de transcription, après avoir déjà
+téléchargé.
+
+**Décision** : dépendre d'un serveur persistant **plutôt que** de charger le
+modèle en processus à chaque exécution (approche de reels-vault), **parce que**
+sur 300 reels le modèle serait chargé 300 fois, et que cela débloque
+`large-v3-turbo` là où un chargement par run impose un modèle léger. *Limite* :
+une dépendance à gérer hors du dépôt, et un conteneur qui tourne en permanence.
+
+---
+
+## 6. Système de fichiers
 
 Le projet n'a ni réseau Docker ni volume. Le vault produit :
 
@@ -130,7 +162,7 @@ Ordre de grandeur : **1 à 3 Go** de vidéos pour 300 reels.
 
 ---
 
-## 6. Décisions d'architecture
+## 7. Décisions d'architecture
 
 - **Conserver la vidéo** plutôt que ne garder que l'URL, **parce que** le post
   d'origine disparaît souvent — le retour d'expérience de reels-vault chiffre à
@@ -180,7 +212,7 @@ Ordre de grandeur : **1 à 3 Go** de vidéos pour 300 reels.
 
 ---
 
-## 7. Sécurité
+## 8. Sécurité
 
 | Durcissement | Effet |
 |---|---|
@@ -195,7 +227,7 @@ dans le profil du navigateur au moment de l'appel.
 
 ---
 
-## 8. Limites connues et pistes
+## 9. Limites connues et pistes
 
 | Aspect | Limitation actuelle | Piste |
 |---|---|---|

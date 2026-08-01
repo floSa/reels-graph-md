@@ -113,6 +113,29 @@ Le script **reprend où il s'est arrêté**. On peut le couper à tout moment : 
 journal est réécrit après chaque reel. Relancer la même commande retente uniquement
 ce qui a échoué.
 
+### Cycle de vie : rien à éteindre côté projet
+
+`reels-ingest` et `reels-mailler` sont des **traitements par lots** : ils démarrent,
+travaillent, rendent la main. Aucun démon, aucun port ouvert, aucun processus
+résiduel. `Ctrl+C` est un moyen d'arrêt légitime — le journal permet de reprendre.
+
+Le **seul service permanent** de la chaîne est le serveur Whisper, et il vit
+**hors de ce dépôt**, en conteneur Docker, dans `claude-skills/local-whisper/`.
+Il porte `restart: unless-stopped` : il redémarre donc tout seul à chaque
+démarrage de Docker tant qu'on ne l'a pas explicitement arrêté.
+
+| Action | Commande |
+|---|---|
+| Démarrer | `local-whisper/speaches-up.sh up` |
+| **Arrêter durablement** | `local-whisper/speaches-up.sh down` |
+| Voir l'état et l'endpoint | `local-whisper/speaches-up.sh status` |
+| Suivre les logs | `local-whisper/speaches-up.sh logs` |
+
+`down` supprime le conteneur : c'est le seul moyen de le couper pour de bon, un
+simple `docker stop` étant annulé par la politique de redémarrage. Le conteneur
+occupe le **port 8000** et, en mode GPU, la mémoire vidéo du modèle — le couper
+est utile avant tout autre travail sur GPU.
+
 ## Configuration
 
 Options de `reels-ingest` :
