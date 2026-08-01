@@ -88,7 +88,44 @@ la procédure ci-dessous.
 
 ---
 
-## 4. Procédure
+## 4. L'outil
+
+Le LLM produit un JSON, `reels-enrichir` l'applique. Le code fait le mécanique,
+le LLM l'éditorial — comme partout ailleurs dans le projet.
+
+```json
+{
+  "insta_ABC": {
+    "titre": "Un titre parlant, qui remplace « Video by <compte> »",
+    "phrase": "Le reel affirme que …",
+    "themes": ["politique", "budget de l'État"],
+    "entites": [{"type": "Institution", "nom": "Assemblée nationale"}],
+    "ce_que_dit": "Texte libre, avec des repères [00:14].",
+    "affirmations": ["[00:22] — « 312 voix pour »"]
+  }
+}
+```
+
+```bash
+uv run reels-enrichir --vault ~/Vault --depuis lot.json --verifier-seulement
+uv run reels-enrichir --vault ~/Vault --depuis lot.json
+```
+
+Le **titre** n'est pas cosmétique : Instagram n'en fournit aucun, yt-dlp rend
+« Video by <compte> », et c'est ce libellé qui s'affiche dans chaque note de
+thème et d'entité. Sans titre, la navigation ne montre qu'une colonne de
+« Video by … ».
+
+`affirmations` peut rester vide — toutes les fiches ne portent pas de fait
+vérifiable, et en inventer serait pire que de laisser la section vide.
+
+Le lot entier est validé **avant** que quoi que ce soit ne soit écrit : une
+fiche sans thème, une entité en double ou un libellé mal détouré arrêtent tout,
+pour ne jamais laisser le vault à moitié traité. L'application est idempotente.
+
+---
+
+## 5. Procédure
 
 **Lister ce qui reste à faire.** La commande sort les chemins bruts, un par
 ligne :
@@ -123,7 +160,7 @@ passage.
 
 ---
 
-## 5. Contrôles avant de considérer un lot fini
+## 6. Contrôles avant de considérer un lot fini
 
 - [ ] Le frontmatter est valide : `reels-mailler` lit les thèmes et entités sans les ignorer.
 - [ ] Aucun libellé nouveau qui doublonne un libellé existant à la casse ou à l'article près.
@@ -134,7 +171,7 @@ passage.
 
 ---
 
-## 6. Limite assumée
+## 7. Limite assumée
 
 Cette étape est **non déterministe**. Deux passages sur la même fiche ne donnent
 pas le même texte au mot près, et la cohérence des libellés dépend de ce qui a

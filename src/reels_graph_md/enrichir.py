@@ -94,6 +94,14 @@ def appliquer(chemin: Path, donnees: dict) -> None:
     entites = donnees.get("entites") or []
     noms = [str(e["nom"]).strip() for e in entites]
 
+    # Instagram ne fournit aucun titre : yt-dlp rend « Video by <compte> », qui
+    # se retrouve tel quel dans chaque note de thème et d'entité. Un vault où
+    # toutes les entrées s'appellent « Video by … » est illisible, et c'est
+    # précisément ce qui doit servir à naviguer.
+    titre = str(donnees.get("titre") or "").strip()
+    if titre:
+        texte = re.sub(r"^# .*$", f"# {titre}", texte, count=1, flags=re.MULTILINE)
+
     texte = _remplacer_liste(texte, "themes", themes)
     texte = _remplacer_liste(texte, "entites", noms)
     texte = re.sub(r"^statut: brut$", "statut: enrichi", texte, count=1, flags=re.MULTILINE)

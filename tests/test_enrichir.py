@@ -84,3 +84,19 @@ class TestValidation:
 
     def test_accepte_un_lot_correct(self):
         enrichir.valider("x", LOT)
+
+
+class TestTitre:
+    def test_remplace_le_titre_generique(self, tmp_path):
+        # Instagram ne fournit pas de titre : yt-dlp rend « Video by <compte> »,
+        # qui se retrouverait tel quel dans chaque note de thème et d'entité.
+        c = _fiche_brute(tmp_path)
+        enrichir.appliquer(c, {**LOT, "titre": "Un vrai titre parlant"})
+        t = c.read_text(encoding="utf-8")
+        assert "# Un vrai titre parlant" in t
+        assert "# Un titre" not in t
+
+    def test_titre_facultatif(self, tmp_path):
+        c = _fiche_brute(tmp_path)
+        enrichir.appliquer(c, LOT)
+        assert "# Un titre" in c.read_text(encoding="utf-8")
