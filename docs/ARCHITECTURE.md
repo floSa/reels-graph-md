@@ -239,6 +239,8 @@ dans le profil du navigateur au moment de l'appel.
 | Enrichissement | Étape manuelle par construction, non déterministe | Procédure dans [ENRICHISSEMENT.md](ENRICHISSEMENT.md) |
 | Recherche sémantique | Absente. La navigation par thème et par entité fonctionne, pas la question en langage naturel | Décision ouverte, voir [CADRAGE.md §6](CADRAGE.md#6-décisions) |
 | Carrousels photo | Ni audio ni transcript ; la fiche se réduit à la légende | Hors périmètre assumé (pas d'analyse visuelle) |
+| **Langue forcée sur un contenu non francophone** | Mesuré sur le stock réel : sur une vidéo anglophone, Whisper produit un français incohérent au bout d'une minute. Le forçage protège le corpus majoritaire mais dégrade le reste | Détecter la langue sur un échantillon avant de forcer, ou repasser les fiches concernées avec `--langue` adapté |
+| **Hallucinations de Whisper sur les vidéos muettes** | Le modèle comble l'absence de parole par des formules de générique — « Sous-titres par … », « Sous-titrage ST' 501 » — qui se lisent comme du contenu réel. Trois cas dans le stock | Filtrer ces formules connues à la sortie du moteur, et marquer la fiche `a_verifier` |
 | Détection de troncature | Un fichier vidéo incomplet passe pour un succès | Contrôle `ffprobe` de la durée contre celle des métadonnées |
 | Source de vérité | La liste de travail est recalculée à chaque lancement : les exports doivent rester disponibles | Documenté dans [GUIDE.md](GUIDE.md) ; une file persistante serait une alternative |
 | Fichier `LICENSE` | Absent du dépôt alors qu'il est public | À ajouter (MIT) sur décision explicite |
