@@ -26,6 +26,21 @@ class Journal:
                 # Un journal corrompu ne doit pas empêcher de repartir : on
                 # repart de zéro, les fiches déjà écrites seront réécrites.
                 self.entrees = {}
+        self._index_natif = self._construire_index_natif()
+
+    def _construire_index_natif(self) -> dict[str, str]:
+        """Index inverse identifiant natif -> URL déjà traitée.
+
+        Reconstruit en mémoire au chargement plutôt que persisté à côté des
+        entrées : le fichier reste un dict plat `URL -> entrée`, lisible à l'œil
+        et sans structure parallèle à maintenir cohérente.
+        """
+        index: dict[str, str] = {}
+        for url, entree in self.entrees.items():
+            natif = entree.get("natif")
+            if natif and entree.get("statut") == "ok" and not entree.get("alias_de"):
+                index.setdefault(natif, url)
+        return index
 
     def est_fait(self, url: str) -> bool:
         return self.entrees.get(url, {}).get("statut") == "ok"
@@ -34,12 +49,26 @@ class Journal:
         """Les URLs qui restent à faire — les échecs sont automatiquement retentés."""
         return [u for u in urls if not self.est_fait(u)]
 
+    def url_pour_natif(self, natif: str) -> str | None:
+        """L'URL déjà traitée qui porte cet identifiant natif, s'il y en a une.
+
+        C'est ce qui rattrape les doublons que la canonicalisation d'URL ne peut
+        pas voir : un lien court `vm.tiktok.com/ZGabc` et sa forme résolue
+        `tiktok.com/@compte/video/7412…` sont deux chaînes irréconciliables tant
+        qu'on n'a pas interrogé la plateforme. L'identifiant qu'elle renvoie,
+        lui, est la vraie identité du reel.
+        """
+        return self._index_natif.get(natif)
+
     def succes(self, url: str, **details) -> None:
         self.entrees[url] = {
             "statut": "ok",
             "le": f"{datetime.now():%Y-%m-%d %H:%M}",
             **details,
         }
+        natif = details.get("natif")
+        if natif and not details.get("alias_de"):
+            self._index_natif.setdefault(natif, url)
         self.sauver()
 
     def echec(self, url: str, erreur: str) -> None:

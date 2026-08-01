@@ -42,9 +42,16 @@ def _preparer_vault(racine: Path) -> dict[str, Path]:
     return dossiers
 
 
+def _cle_native(plateforme: str, meta: dict) -> str | None:
+    """Identité du reel telle que la plateforme la déclare, ou None si absente."""
+    natif = str(meta.get("id") or "").strip()
+    return f"{plateforme}:{natif}" if natif else None
+
+
 def _traiter(
     url: str,
     dossiers: dict[str, Path],
+    carnet: Journal,
     cookies: str | None,
     langue: str,
 ) -> dict:
@@ -56,6 +63,21 @@ def _traiter(
 
     try:
         meta = ytdlp.metadonnees(url, cookies)
+
+        # Deuxième passe de déduplication, celle qui compte : la canonicalisation
+        # d'URL ne peut pas rapprocher un lien court de sa forme résolue. Ce
+        # contrôle a lieu après l'appel aux métadonnées — le moins cher des
+        # appels — et avant le téléchargement, qui est le poste coûteux.
+        natif = _cle_native(plateforme, meta)
+        if natif:
+            deja = carnet.url_pour_natif(natif)
+            if deja is not None and deja != url:
+                return {
+                    "natif": natif,
+                    "alias_de": deja,
+                    "fiche": carnet.entrees.get(deja, {}).get("fiche", ""),
+                    "genre": "alias",
+                }
 
         # Pas de durée = pas de vidéo : c'est un carrousel photo. Sans analyse
         # d'image (hors périmètre, décidé), il ne reste que la légende. On l'écrit
@@ -71,7 +93,12 @@ def _traiter(
                 source_transcript="aucune (carrousel)",
             )
             fiche.ecrire(dossiers["fiches"], nom, contenu)
-            return {"fiche": f"{nom}.md", "genre": "carrousel", "fiabilite": "legende_seule"}
+            return {
+                "fiche": f"{nom}.md",
+                "genre": "carrousel",
+                "fiabilite": "legende_seule",
+                "natif": natif,
+            }
 
         video_temp, sous_titres = ytdlp.telecharger(url, temp, nom, cookies)
 
@@ -111,6 +138,7 @@ def _traiter(
             "video": f"reels/{video.name}",
             "genre": "video",
             "fiabilite": fiche.evaluer_fiabilite(transcript, meta.get("description") or ""),
+            "natif": natif,
         }
     finally:
         shutil.rmtree(temp, ignore_errors=True)
@@ -170,18 +198,22 @@ def main() -> int:
         log("Démarre-le avec claude-skills/local-whisper/speaches-up.sh, puis relance.")
         return 3
 
-    reussites, echecs = 0, 0
+    reussites, echecs, alias = 0, 0, 0
     fiabilites: dict[str, int] = {}
 
     for numero, url in enumerate(a_faire, 1):
         log(f"[{numero}/{len(a_faire)}] {url}")
         try:
-            details = _traiter(url, dossiers, args.cookies, args.langue)
+            details = _traiter(url, dossiers, carnet, args.cookies, args.langue)
             carnet.succes(url, **details)
             reussites += 1
-            niveau = details.get("fiabilite", "?")
-            fiabilites[niveau] = fiabilites.get(niveau, 0) + 1
-            log(f"    ok — {details['fiche']} (fiabilité : {niveau})")
+            if details.get("alias_de"):
+                alias += 1
+                log(f"    doublon — même reel que {details['alias_de']}, rien téléchargé")
+            else:
+                niveau = details.get("fiabilite", "?")
+                fiabilites[niveau] = fiabilites.get(niveau, 0) + 1
+                log(f"    ok — {details['fiche']} (fiabilité : {niveau})")
         except KeyboardInterrupt:
             log("Interrompu. Le journal est à jour, relance pour reprendre.")
             return 130
@@ -194,6 +226,8 @@ def main() -> int:
             time.sleep(args.pause)
 
     log(f"Terminé — {reussites} réussites, {echecs} échecs.")
+    if alias:
+        log(f"Dont {alias} doublons détectés après résolution : aucun téléchargement refait.")
     if fiabilites:
         detail = ", ".join(f"{n} {niveau}" for niveau, n in sorted(fiabilites.items()))
         log(f"Fiabilité des fiches : {detail}")
