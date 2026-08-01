@@ -1,6 +1,6 @@
 """Tests de l'extraction de liens — la brique la plus facile à casser en silence."""
 
-from reels_graph import liens
+from reels_md import liens
 
 
 class TestPlateforme:

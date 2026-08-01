@@ -1,4 +1,4 @@
-# reels-graph
+# reels-md
 
 Transforme des reels sauvegardés (Instagram, TikTok, Facebook) en **vault Obsidian**
 consultable : une fiche Markdown par reel, la vidéo lisible dans la note, et une
@@ -37,7 +37,7 @@ Il est importé depuis son emplacement réel, pas recopié. Si claude-skills est
 ailleurs :
 
 ```bash
-export REELS_GRAPH_WATCH_SCRIPTS=/chemin/vers/watch/scripts
+export REELS_MD_WATCH_SCRIPTS=/chemin/vers/watch/scripts
 ```
 
 ## Étape 0 — récupérer ses reels sauvegardés

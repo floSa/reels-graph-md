@@ -9,7 +9,7 @@ Ce qu'on en tire :
   - `transcribe.parse_vtt()` : lecture des sous-titres de plateforme, avec
     l'effondrement des doublons roulants.
 
-Le chemin est surchargeable par REELS_GRAPH_WATCH_SCRIPTS pour ceux qui ont
+Le chemin est surchargeable par REELS_MD_WATCH_SCRIPTS pour ceux qui ont
 claude-skills ailleurs.
 """
 
@@ -25,7 +25,7 @@ _charge = False
 
 
 def chemin_scripts() -> Path:
-    surcharge = os.environ.get("REELS_GRAPH_WATCH_SCRIPTS")
+    surcharge = os.environ.get("REELS_MD_WATCH_SCRIPTS")
     return Path(surcharge).expanduser() if surcharge else CHEMIN_DEFAUT
 
 
@@ -39,7 +39,7 @@ def _charger() -> None:
         raise SystemExit(
             f"Moteur de transcription introuvable dans {dossier}.\n"
             "Il vient du skill `watch` (claude-skills). Indique son emplacement "
-            "avec REELS_GRAPH_WATCH_SCRIPTS=/chemin/vers/watch/scripts"
+            "avec REELS_MD_WATCH_SCRIPTS=/chemin/vers/watch/scripts"
         )
 
     # En tête de sys.path : whisper.py fait `from config import read_env_file`,
