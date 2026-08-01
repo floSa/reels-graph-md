@@ -38,6 +38,14 @@ Trois pièges à ce stade :
 
 ---
 
+> **Sans attendre les exports.** Les exports ne servent qu'à produire la *liste*
+> de tes enregistrements ; le pipeline, lui, ne mange que des URLs. Dès
+> l'installation faite, tu peux valider toute la chaîne en collant l'URL de
+> n'importe quel reel public dans `~/Vault/inbox.txt` puis en lançant
+> `uv run reels-ingest --vault ~/Vault`. Voir l'étape 5 bis.
+
+---
+
 ## Étape 2 — Installer
 
 ### 2.1 Le projet
@@ -196,6 +204,21 @@ sur 300.
 Ouvrir `~/Vault` comme coffre. Une fiche doit montrer un lecteur vidéo en tête,
 puis la légende et le transcript horodaté. Si le lecteur ne s'affiche pas,
 vérifier que le fichier existe dans `~/Vault/reels/`.
+
+### Étape 5 bis — Tester sans attendre les exports
+
+Pour valider la chaîne tout de suite, il suffit d'une URL publique :
+
+```bash
+echo "https://www.tiktok.com/@lemondefr/video/7669096613092003104" >> ~/Vault/inbox.txt
+uv run reels-ingest --vault ~/Vault
+```
+
+TikTok ne demande pas de cookies : c'est la branche la plus simple à éprouver.
+Instagram et Facebook en exigent, avec Firefox fermé.
+
+Repères mesurés sur des reels réels : **20 secondes par reel**, **environ 3 Mo**
+de vidéo, transcript fidèle sur deux minutes de parole.
 
 ---
 

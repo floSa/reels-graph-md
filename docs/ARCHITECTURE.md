@@ -233,9 +233,9 @@ dans le profil du navigateur au moment de l'appel.
 
 | Aspect | Limitation actuelle | Piste |
 |---|---|---|
-| Chemin réseau | Non testé automatiquement sur les trois plateformes ; Instagram et Facebook exigent des cookies | Test manuel sur un lot de 10 avant tout lot volumineux |
+| Chemin réseau | **TikTok validé de bout en bout** sans cookies (~20 s par reel). Instagram et Facebook non validés : ils exigent des cookies | Coller une URL publique dans `inbox.txt` et lancer, sans attendre les exports |
 | Export Facebook | Structure du fichier non confrontée à un export réel ; le filtre couvre `/reel/`, `/watch?v=`, `/share/r/`, `fb.watch/` | Valider sur un export réel, élargir `MOTIFS_CONTENU` si besoin |
-| Granularité des horodatages | Whisper peut rendre un segment unique pour un clip court, réduisant le transcript à un seul repère `[00:00]` | À mesurer sur de vrais reels ; découpage forcé si le besoin se confirme |
+| Granularité des horodatages | **Mesuré sur de vrais reels** : Whisper rend des segments de ~30 s (5 pour un reel de 2 min) et parfois un segment unique. Trop grossier pour situer une affirmation chiffrée. Les sous-titres de plateforme sont fins (66 segments sur le même reel) mais absents une fois sur deux | Découper les segments Whisper longs, ou préférer les captions comme grille horodatée quand elles existent |
 | Enrichissement | Étape manuelle par construction, non déterministe | Procédure dans [ENRICHISSEMENT.md](ENRICHISSEMENT.md) |
 | Recherche sémantique | Absente. La navigation par thème et par entité fonctionne, pas la question en langage naturel | Décision ouverte, voir [CADRAGE.md §6](CADRAGE.md#6-décisions) |
 | Carrousels photo | Ni audio ni transcript ; la fiche se réduit à la légende | Hors périmètre assumé (pas d'analyse visuelle) |
