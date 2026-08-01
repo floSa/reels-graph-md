@@ -158,3 +158,39 @@ class TestTranscriptionMuette:
         # RuntimeError, pas SystemExit : le lot doit survivre et ne perdre que ce reel.
         with pytest.raises(RuntimeError, match="transcription impossible"):
             moteur.transcrire(tmp_path / "v.mp4", tmp_path / "a.mp3")
+
+
+class TestPostSansFormatVideo:
+    """Certains posts annoncent une durée sans exposer de format téléchargeable.
+    Les compter en échec les ferait retenter éternellement et sans espoir."""
+
+    def _lancer(self, monkeypatch, tmp_path, erreur):
+        from reels_graph_md import ingest, ytdlp
+
+        monkeypatch.setattr(
+            ytdlp, "metadonnees",
+            lambda url, cookies: {"id": "X", "duration": 30, "description": "une légende bien assez longue pour compter"},
+        )
+        def faux_telecharger(*a, **k):
+            raise ytdlp.ErreurYtdlp(erreur)
+        monkeypatch.setattr(ytdlp, "telecharger", faux_telecharger)
+
+        dossiers = {n: tmp_path / n for n in ("fiches", "reels", "temp")}
+        for d in dossiers.values():
+            d.mkdir(parents=True, exist_ok=True)
+        from reels_graph_md.journal import Journal
+        return ingest._traiter(
+            "https://instagram.com/reel/X", dossiers, Journal(tmp_path / "j.json"), None, "fr"
+        )
+
+    def test_aucun_format_donne_une_fiche_legende(self, monkeypatch, tmp_path):
+        details = self._lancer(monkeypatch, tmp_path, "No video formats found!")
+        assert details["genre"] == "aucun format vidéo"
+        assert details["fiabilite"] == "legende_seule"
+        assert (tmp_path / "fiches" / "insta_X.md").exists()
+
+    def test_une_vraie_panne_reste_un_echec(self, monkeypatch, tmp_path):
+        import pytest
+        from reels_graph_md import ytdlp
+        with pytest.raises(ytdlp.ErreurYtdlp):
+            self._lancer(monkeypatch, tmp_path, "HTTP Error 429: Too Many Requests")

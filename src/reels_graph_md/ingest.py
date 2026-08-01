@@ -86,28 +86,45 @@ def _traiter(
                     "genre": "alias",
                 }
 
-        # Pas de durée = pas de vidéo : c'est un carrousel photo. Sans analyse
-        # d'image (hors périmètre, décidé), il ne reste que la légende. On l'écrit
-        # quand même, elle est souvent substantielle sur du contenu informatif,
-        # mais la fiche sera étiquetée `legende_seule`.
-        if not meta.get("duration"):
+        def sans_video(raison: str) -> dict:
+            """Fiche réduite à la légende, pour un post dont la vidéo est hors d'atteinte.
+
+            Sans analyse d'image (hors périmètre, décidé), il ne reste que la
+            légende. On l'écrit quand même — elle est souvent substantielle sur
+            du contenu informatif — mais la fiche est étiquetée `legende_seule`.
+            """
             contenu = fiche.construire(
                 identifiant=nom,
                 url=url,
                 plateforme=plateforme,
                 meta=meta,
                 transcript="",
-                source_transcript="aucune (carrousel)",
+                source_transcript=f"aucune ({raison})",
             )
             fiche.ecrire(dossiers["fiches"], nom, contenu)
             return {
                 "fiche": f"{nom}.md",
-                "genre": "carrousel",
-                "fiabilite": "legende_seule",
+                "genre": raison,
+                "fiabilite": fiche.evaluer_fiabilite("", meta.get("description") or ""),
                 "natif": natif,
             }
 
-        video_temp, sous_titres = ytdlp.telecharger(url, temp, nom, cookies)
+        # Pas de durée annoncée : c'est un carrousel photo.
+        if not meta.get("duration"):
+            return sans_video("carrousel")
+
+        try:
+            video_temp, sous_titres = ytdlp.telecharger(url, temp, nom, cookies)
+        except ytdlp.ErreurYtdlp as exc:
+            # Certains posts annoncent une durée sans exposer le moindre format
+            # téléchargeable — un carrousel contenant une vidéo, typiquement.
+            # yt-dlp répond « No video formats found ». Les compter en échec les
+            # ferait retenter à chaque relance, éternellement et sans espoir :
+            # on les traite comme des carrousels.
+            if "no video formats" not in str(exc).lower():
+                raise
+            log("    aucun format vidéo exposé — fiche réduite à la légende")
+            return sans_video("aucun format vidéo")
 
         # La vidéo est conservée : c'est elle qui permet de revoir le reel depuis
         # Obsidian même quand le post d'origine a disparu — ce qui arrive à environ
