@@ -71,6 +71,19 @@ class Journal:
             self._index_natif.setdefault(natif, url)
         self.sauver()
 
+    def remettre_en_file(self, url: str, raison: str) -> None:
+        """Redéclasse une entrée `ok` en échec pour qu'elle soit refaite.
+
+        Sert à la réparation : une fiche ou une vidéo supprimée du disque laisse
+        une entrée `ok` mensongère, qui fait sauter le reel indéfiniment. On
+        retire aussi l'entrée de l'index natif, sans quoi le reel refait serait
+        immédiatement classé comme doublon de lui-même.
+        """
+        natif = self.entrees.get(url, {}).get("natif")
+        if natif and self._index_natif.get(natif) == url:
+            del self._index_natif[natif]
+        self.echec(url, raison)
+
     def echec(self, url: str, erreur: str) -> None:
         precedent = self.entrees.get(url, {})
         self.entrees[url] = {
