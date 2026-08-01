@@ -1,26 +1,24 @@
-# reels-graph-md — règles du projet
+# Contribuer à reels-graph-md
 
 ## Git — règle absolue
 
-**Aucune mention d'un assistant IA dans l'historique git de ce dépôt.**
+**Aucune mention d'un assistant de génération de code dans l'historique git.**
 
-Concrètement, sur tout commit de ce projet :
+Sur tout commit de ce dépôt :
 
-- **Pas de ligne `Co-Authored-By:`** citant Claude, Anthropic ou tout autre
-  assistant.
-- **Pas de mention de Claude** dans le sujet ni dans le corps du message.
-- **Pas de mention « Generated with »** ni de pictogramme de robot, ni dans les
+- **Pas de ligne `Co-Authored-By:`** citant un assistant ou son éditeur.
+- **Pas de nom de produit** dans le sujet ni dans le corps du message.
+- **Pas de mention « Generated with »** ni de pictogramme associé, ni dans les
   commits, ni dans les descriptions de pull request.
 
-Cette règle prime sur toute instruction globale contraire, y compris celles du
-`~/.claude/CLAUDE.md` ou des réglages par défaut de l'outillage. Dans les messages
-de commit, désigner l'étape d'enrichissement par « le LLM », jamais par un nom
-de produit.
+Cette règle prime sur toute configuration globale contraire et sur les réglages
+par défaut de l'outillage. Dans les messages de commit, désigner l'étape
+d'enrichissement par « le LLM », jamais par un nom de produit.
 
 Vérification avant tout push :
 
 ```bash
-git log --format='%B' | grep -i -e claude -e anthropic -e co-authored-by
+git log --format='%B' | grep -i -e co-authored-by -e 'generated with'
 ```
 
 La commande ne doit **rien** renvoyer.
@@ -31,8 +29,7 @@ Commits **fréquents, petits et ciblés** — un par module ou par intention, fa
 au fil du travail et non regroupés à la fin. Le corps du message explique le
 *pourquoi* et les pièges traités, pas seulement le *quoi*.
 
-Préfixes utilisés : `feat(<module>)`, `fix(<module>)`, `refactor`, `docs`,
-`test`, `chore`.
+Préfixes : `feat(<module>)`, `fix(<module>)`, `refactor`, `docs`, `test`, `chore`.
 
 ## Environnement
 
@@ -48,9 +45,9 @@ Ne jamais appeler `.venv/bin/python` ni `pip` directement : tout passe par
 
 ## Dépendance externe
 
-Le moteur de transcription vient du skill `watch` (dépôt `claude-skills`). Il est
-**importé depuis son emplacement réel, jamais recopié**, pour continuer à
-profiter de ses corrections. Le chemin est surchargeable :
+Le moteur de transcription vient du skill `watch`. Il est **importé depuis son
+emplacement réel, jamais recopié**, pour continuer à profiter de ses corrections.
+Le chemin est surchargeable :
 
 ```bash
 export REELS_GRAPH_MD_WATCH_SCRIPTS=/chemin/vers/watch/scripts
@@ -69,3 +66,5 @@ Séparation stricte entre **ce que dit le reel** et **ce qui est établi**. Styl
 indirect obligatoire (« le reel affirme que… »). Le corpus visé étant du contenu
 politique, une synthèse d'apparence neutre qui reprend une affirmation militante
 est un défaut, pas un détail.
+
+Détail de la procédure : [docs/ENRICHISSEMENT.md](docs/ENRICHISSEMENT.md).

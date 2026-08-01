@@ -83,7 +83,7 @@ flowchart LR
 | [docs/ENRICHISSEMENT.md](docs/ENRICHISSEMENT.md) | L'étape 8 : procédure, règles de rédaction, nommage des thèmes et entités |
 | [docs/CADRAGE.md](docs/CADRAGE.md) | Le pourquoi : objectifs, périmètre, hypothèses, décisions, roadmap |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Le comment : composants, flux, décisions techniques, sécurité |
-| [CLAUDE.md](CLAUDE.md) | Règles de contribution du dépôt |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Règles de contribution du dépôt |
 
 ## Démarrage
 
@@ -206,7 +206,7 @@ reels-graph-md/
 ├── docs/
 │   ├── CADRAGE.md            # le pourquoi
 │   └── ARCHITECTURE.md       # le comment
-├── CLAUDE.md                 # règles de contribution
+├── CONTRIBUTING.md           # règles de contribution
 ├── pyproject.toml            # uv, Python 3.12, zéro dépendance de production
 └── README.md
 ```
