@@ -191,7 +191,7 @@ Codes de sortie de `reels-ingest` : `0` terminé, `2` fichier d'export introuvab
 uv run pytest
 ```
 
-**71 tests** sur les fonctions pures : extraction et normalisation des liens,
+**113 tests** sur les fonctions pures : extraction et normalisation des liens,
 déduplication native, audit et réparation du vault, boîte de réception,
 échappement YAML, évaluation de fiabilité, maillage et son idempotence. Les étapes
 réseau ne sont pas testées automatiquement — voir
@@ -336,13 +336,17 @@ sont retentés à chaque relance.
   mais on ne peut pas compter dessus.
 - **Instagram rate-limite sévèrement** : procéder par lots de ~50 étalés sur
   plusieurs jours.
-- **Le chemin réseau des trois plateformes n'est pas encore validé**, et la
-  structure de l'export Facebook n'a pas été confrontée à un export réel.
+- **Instagram et TikTok sont validés sur un stock réel** (293 reels, zéro échec).
+  Facebook reste à éprouver : ni son export ni son téléchargement n'ont été
+  confrontés à des données réelles.
 - **Les exports doivent rester disponibles.** La liste de travail est recalculée
   à chaque lancement ; le journal enregistre ce qui est fait, pas ce qui reste.
-- **L'étape 8 reste manuelle** : les fiches sortent avec `themes: []` et
-  `entites: []`, à remplir par lots selon
+- **L'étape 8 reste manuelle** — c'est la seule qui consomme du quota. Elle est
+  outillée (`reels-enrichir`) et documentée dans
   [docs/ENRICHISSEMENT.md](docs/ENRICHISSEMENT.md).
+- **Environ 13 % des fiches sont marquées `a_verifier`** : vidéo muette, langue
+  non couverte, ou information affichée à l'écran seulement. Elles gardent leur
+  fiche et leur vidéo, et sont regroupées pour reprise à la main.
 - **La recherche sémantique n'est pas là.** La navigation par thème et par entité
   fonctionne ; retrouver un reel à partir d'une question en langage naturel reste à
   concevoir — voir [docs/CADRAGE.md](docs/CADRAGE.md).

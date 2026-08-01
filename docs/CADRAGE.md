@@ -156,14 +156,15 @@ transcription.
 
 0. **Socle** — extraction des liens, journal, téléchargement, transcription,
    fiche, maillage. *Fait.*
-1. **Validation réseau** — un lot de 10 reels par plateforme, avec cookies.
-   Confronter le filtre d'URL à un export Facebook réel. *Bloquant pour la suite.*
+1. **Validation réseau** — *Fait pour Instagram et TikTok.* 293 reels traités,
+   zéro échec, aucun rate-limit. Facebook reste à confronter à un export réel.
 2. **Outillage de l'enrichissement** — procédure de traitement par lots, avec la
    règle éditoriale et la contrainte de cohérence des libellés. *Fait, voir
    [ENRICHISSEMENT.md](ENRICHISSEMENT.md).*
-3. **Passage à l'échelle** — lots de ~50 étalés, mesure du taux d'échec et de la
-   durée par reel.
-4. **Recherche** — trancher §6 sur la base des mesures de l'étape 3.
+3. **Passage à l'échelle** — *Fait.* Mesures réelles : ~10 s et ~12 Mo par reel
+   sur GPU, aucun rate-limit sur 293 reels enchaînés.
+4. **Recherche** — *Reste à trancher (§6).* Le maillage compte désormais
+   81 thèmes et 195 entités : de quoi juger sur pièces si la navigation suffit.
 5. **Flux continu** — `inbox.txt` lue et archivée automatiquement. *Fait côté
    code ; reste à poser le raccourci de partage mobile.*
 
