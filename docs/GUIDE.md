@@ -101,15 +101,31 @@ modèle : compter plusieurs minutes.
 
 ### 2.5 Le navigateur, pour les cookies
 
-Instagram et Facebook exigent une session authentifiée. Deux contraintes sans
-contournement :
+Instagram et Facebook exigent une session authentifiée. Se connecter aux deux
+dans **Firefox**, et c'est tout.
 
-- **Firefox obligatoire.** Chrome 127 et suivants chiffrent leurs cookies d'une
-  façon que yt-dlp ne sait pas déchiffrer sous Windows.
-- **Le navigateur doit être complètement fermé** pendant l'exécution : il
-  verrouille son fichier de cookies.
+**Firefox plutôt que Chrome** : Chrome 127 et suivants chiffrent leurs cookies
+avec l'API de Windows, que yt-dlp ne sait pas déchiffrer — et encore moins depuis
+WSL. Firefox ne les chiffre pas.
 
-Se connecter aux trois plateformes dans Firefox, puis le fermer.
+**Il n'est pas nécessaire de fermer le navigateur.** Cette précaution vaut pour
+une exécution Windows native, où Firefox verrouille sa base. Depuis WSL, la base
+est copiée avant lecture : vérifié navigateur ouvert, avec trois processus
+`firefox.exe` actifs.
+
+**Cas WSL, traité automatiquement.** `--cookies-from-browser firefox` ne cherche
+que dans les emplacements Linux (`~/.mozilla/firefox`…). Quand Firefox tourne
+côté Windows, yt-dlp échoue avec « could not find firefox cookies database ». Le
+projet détecte le cas et va chercher le profil Windows tout seul :
+
+```
+[cookies] Firefox absent de WSL — profil Windows retenu :
+          /mnt/c/Users/<toi>/AppData/Roaming/Mozilla/Firefox/Profiles/xxxx.default-release
+```
+
+Pour forcer un profil précis, `--cookies` accepte aussi un chemin de dossier de
+profil, ou la forme explicite `firefox:/chemin/vers/le/profil`, ou encore un
+fichier `cookies.txt`.
 
 ---
 
@@ -215,7 +231,7 @@ uv run reels-ingest --vault ~/Vault
 ```
 
 TikTok ne demande pas de cookies : c'est la branche la plus simple à éprouver.
-Instagram et Facebook en exigent, avec Firefox fermé.
+Instagram et Facebook en exigent — sans avoir à fermer Firefox.
 
 Repères mesurés sur des reels réels : **20 secondes par reel**, **environ 3 Mo**
 de vidéo, transcript fidèle sur deux minutes de parole.
@@ -394,7 +410,7 @@ dans `themes/` ou `entites/` : ces dossiers sont réécrits à chaque passage.
 | Symptôme | Cause | Solution |
 |---|---|---|
 | `Failed to decrypt with DPAPI` | Chrome 127+ chiffre ses cookies | Utiliser Firefox. Pas de contournement |
-| Cookies non lus, fichier verrouillé | Le navigateur tourne | Le fermer complètement |
+| `could not find firefox cookies database` | Profil cherché côté Linux alors que Firefox tourne sous Windows | Détecté automatiquement sous WSL ; sinon passer le chemin du profil à `--cookies` |
 | Sortie en code `3` | Serveur Whisper injoignable | `speaches-up.sh up`, puis relancer |
 | Sortie en code `2` | Aucune source, ou fichier introuvable | Vérifier les chemins passés |
 | Transcript dans la mauvaise langue | Corpus non francophone | `--langue en` |

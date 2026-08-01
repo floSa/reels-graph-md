@@ -76,19 +76,95 @@ def verifier_outils() -> None:
         )
 
 
-def options_cookies(cookies: str | None) -> list[str]:
-    """`--cookies` accepte un nom de navigateur ou un chemin de cookies.txt.
+def sous_wsl() -> bool:
+    try:
+        return "microsoft" in Path("/proc/version").read_text(encoding="utf-8").lower()
+    except OSError:
+        return False
 
-    Rappel de terrain : sous Windows, Chrome 127+ chiffre ses cookies d'une façon
-    que yt-dlp ne sait pas déchiffrer. Il faut Firefox, et le navigateur doit être
-    complètement fermé — il verrouille son fichier de cookies.
+
+def profil_firefox_linux() -> bool:
+    """True si un profil Firefox natif **utilisable** existe.
+
+    On cherche `cookies.sqlite`, pas le dossier : `~/.config/mozilla/firefox`
+    peut exister tout en étant vide, et yt-dlp échoue alors exactement comme s'il
+    n'y avait rien. Constaté sur cette machine.
+    """
+    for racine in (".mozilla/firefox", ".config/mozilla/firefox"):
+        base = Path.home() / racine
+        if base.is_dir() and any(base.glob("*/cookies.sqlite")):
+            return True
+    return False
+
+
+def profils_firefox_windows() -> list[Path]:
+    """Profils Firefox de l'hôte Windows visibles depuis WSL, le plus récent d'abord.
+
+    Le tri se fait sur la date de `cookies.sqlite` : un poste a souvent plusieurs
+    profils dont un seul sert vraiment, et c'est celui dont les cookies bougent.
+    """
+    trouves = []
+    for base in Path("/mnt").glob("*/Users/*/AppData/Roaming/Mozilla/Firefox/Profiles/*"):
+        sqlite = base / "cookies.sqlite"
+        if sqlite.is_file():
+            trouves.append((sqlite.stat().st_mtime, base))
+    return [chemin for _, chemin in sorted(trouves, reverse=True)]
+
+
+def resoudre_cookies(
+    cookies: str,
+    *,
+    profil_linux: bool,
+    profils_windows: list[Path],
+) -> tuple[list[str], str | None]:
+    """Traduit `--cookies` en arguments yt-dlp. Renvoie (arguments, message).
+
+    Le cas piégeux est WSL. `--cookies-from-browser firefox` ne cherche que dans
+    les emplacements Linux (`~/.mozilla/firefox`…). Or le navigateur de
+    l'utilisateur tourne côté Windows : yt-dlp échoue avec « could not find
+    firefox cookies database », ce qui n'oriente vers aucune solution. On va donc
+    chercher le profil Windows nous-mêmes.
+    """
+    chemin = Path(cookies).expanduser()
+
+    if chemin.is_file():
+        return ["--cookies", str(chemin.resolve())], None
+
+    # Un dossier de profil passé directement.
+    if chemin.is_dir() and (chemin / "cookies.sqlite").is_file():
+        return ["--cookies-from-browser", f"firefox:{chemin}"], None
+
+    # Forme explicite `navigateur:profil` : l'utilisateur sait ce qu'il fait.
+    if ":" in cookies:
+        return ["--cookies-from-browser", cookies], None
+
+    if cookies.lower() == "firefox" and not profil_linux and profils_windows:
+        retenu = profils_windows[0]
+        message = f"Firefox absent de WSL — profil Windows retenu : {retenu}"
+        return ["--cookies-from-browser", f"firefox:{retenu}"], message
+
+    return ["--cookies-from-browser", cookies], None
+
+
+def options_cookies(cookies: str | None) -> list[str]:
+    """`--cookies` accepte un nom de navigateur, un cookies.txt ou un dossier de profil.
+
+    Rappel de terrain : Chrome 127+ chiffre ses cookies d'une façon que yt-dlp ne
+    sait pas déchiffrer sous Windows. Firefox reste donc le bon choix. En
+    revanche, il n'est **pas** nécessaire de le fermer : depuis WSL, la base est
+    copiée avant lecture et Firefox ne la verrouille pas — vérifié navigateur
+    ouvert.
     """
     if not cookies:
         return []
-    chemin = Path(cookies).expanduser()
-    if chemin.exists():
-        return ["--cookies", str(chemin.resolve())]
-    return ["--cookies-from-browser", cookies]
+    arguments, message = resoudre_cookies(
+        cookies,
+        profil_linux=profil_firefox_linux(),
+        profils_windows=profils_firefox_windows() if sous_wsl() else [],
+    )
+    if message:
+        print(f"[cookies] {message}", file=sys.stderr)
+    return arguments
 
 
 def metadonnees(url: str, cookies: str | None = None) -> dict:

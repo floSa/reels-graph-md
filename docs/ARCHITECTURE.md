@@ -219,7 +219,7 @@ Ordre de grandeur : **1 à 3 Go** de vidéos pour 300 reels.
 | Durcissement | Effet |
 |---|---|
 | Aucune clé d'API dans le projet | Rien à fuiter ; la transcription est locale |
-| Cookies jamais persistés | `yt-dlp --cookies-from-browser` lit le profil, le projet n'écrit rien |
+| Cookies jamais persistés | `yt-dlp --cookies-from-browser` lit une copie du profil, le projet n'écrit rien et ne journalise aucune valeur |
 | `.gitignore` couvrant `exports/`, `saved_posts*.json`, `user_data_tiktok*.json`, `cookies.txt` | Les exports contiennent des données personnelles et ne peuvent pas partir dans le dépôt par accident |
 | Écriture atomique du journal | Une coupure ne laisse pas de journal tronqué |
 | Aucun appel réseau sortant hors plateformes et `localhost` | Le contenu des reels ne quitte pas la machine |

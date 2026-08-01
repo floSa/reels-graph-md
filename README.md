@@ -306,9 +306,10 @@ est lu, en réutilisant les mêmes libellés d'une fiche à l'autre.
 déchiffrer sous Windows. **Solution** : utiliser Firefox. Il n'y a pas de
 contournement.
 
-**Problème** : les cookies ne sont pas lus, ou le fichier est verrouillé.
-**Cause** : le navigateur verrouille son fichier de cookies tant qu'il tourne.
-**Solution** : fermer complètement le navigateur avant de lancer le script.
+**Problème** : `could not find firefox cookies database`.
+**Cause** : yt-dlp ne cherche le profil que dans les emplacements Linux, alors que
+Firefox tourne côté Windows. **Solution** : le projet le détecte tout seul sous
+WSL. Sinon, passer le chemin du profil à `--cookies`.
 
 **Problème** : `reels-ingest` sort avec le code `3`.
 **Cause** : le serveur Whisper local ne répond pas. **Solution** : le démarrer avec
