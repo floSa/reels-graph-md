@@ -69,7 +69,16 @@ def _traiter(
     temp.mkdir(parents=True, exist_ok=True)
 
     try:
-        meta = ytdlp.metadonnees(url, cookies)
+        try:
+            meta = ytdlp.metadonnees(url, cookies)
+        except ytdlp.ErreurYtdlp as exc:
+            # `--dump-json` échoue en entier sur un carrousel photo : yt-dlp
+            # répond « No video formats found » pour chaque élément et ne rend
+            # rien, pas même la légende. Rien à écrire, et rien à réessayer —
+            # la cause est structurelle, pas transitoire.
+            if "no video formats" not in str(exc).lower():
+                raise
+            return {"genre": "carrousel photo", "impossible": "aucune donnée exploitable"}
 
         # Deuxième passe de déduplication, celle qui compte : la canonicalisation
         # d'URL ne peut pas rapprocher un lien court de sa forme résolue. Ce
@@ -242,7 +251,7 @@ def main() -> int:
         log("Démarre-le avec claude-skills/local-whisper/speaches-up.sh, puis relance.")
         return 3
 
-    reussites, echecs, alias = 0, 0, 0
+    reussites, echecs, alias, impossibles = 0, 0, 0, 0
     consecutifs, interrompu = 0, False
     fiabilites: dict[str, int] = {}
 
@@ -250,9 +259,16 @@ def main() -> int:
         log(f"[{numero}/{len(a_faire)}] {url}")
         try:
             details = _traiter(url, dossiers, carnet, args.cookies, args.langue)
+            consecutifs = 0
+            if details.get("impossible"):
+                carnet.impossible(url, f"{details['genre']} — {details['impossible']}")
+                impossibles += 1
+                log(f"    hors d'atteinte : {details['genre']}, ne sera plus retenté")
+                if numero < len(a_faire):
+                    time.sleep(args.pause)
+                continue
             carnet.succes(url, **details)
             reussites += 1
-            consecutifs = 0
             if details.get("alias_de"):
                 alias += 1
                 log(f"    doublon — même reel que {details['alias_de']}, rien téléchargé")
@@ -288,6 +304,8 @@ def main() -> int:
             log(f"{archivees} ligne(s) déplacée(s) vers {inbox.NOM_ARCHIVE}.")
 
     log(f"Terminé — {reussites} réussites, {echecs} échecs.")
+    if impossibles:
+        log(f"Dont {impossibles} post(s) hors d'atteinte, retirés de la file.")
     if alias:
         log(f"Dont {alias} doublons détectés après résolution : aucun téléchargement refait.")
     if fiabilites:

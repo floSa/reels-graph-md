@@ -43,11 +43,31 @@ class Journal:
         return index
 
     def est_fait(self, url: str) -> bool:
-        return self.entrees.get(url, {}).get("statut") == "ok"
+        return self.entrees.get(url, {}).get("statut") in ("ok", "impossible")
 
     def a_traiter(self, urls: list[str]) -> list[str]:
-        """Les URLs qui restent à faire — les échecs sont automatiquement retentés."""
+        """Les URLs qui restent à faire — les échecs sont automatiquement retentés.
+
+        Trois états, et la distinction compte. `ok` est traité, `echec` est
+        transitoire donc retenté, `impossible` est structurel : le retenter à
+        chaque lancement ne produirait jamais rien d'autre que la même erreur.
+        """
         return [u for u in urls if not self.est_fait(u)]
+
+    def impossible(self, url: str, raison: str) -> None:
+        """Marque une URL comme définitivement hors d'atteinte.
+
+        Cas rencontré : un carrousel photo dont `yt-dlp --dump-json` ne tire
+        rien, pas même la légende. La cause ne passera pas avec le temps ;
+        compter ces posts en échec les ferait retenter éternellement et
+        gonflerait le compteur d'échecs sans que rien ne soit réparable.
+        """
+        self.entrees[url] = {
+            "statut": "impossible",
+            "le": f"{datetime.now():%Y-%m-%d %H:%M}",
+            "raison": str(raison).replace("\n", " ")[:200],
+        }
+        self.sauver()
 
     def url_pour_natif(self, natif: str) -> str | None:
         """L'URL déjà traitée qui porte cet identifiant natif, s'il y en a une.
@@ -104,7 +124,7 @@ class Journal:
         provisoire.replace(self.chemin)
 
     def resume(self) -> dict[str, int]:
-        compte = {"ok": 0, "echec": 0}
+        compte = {"ok": 0, "echec": 0, "impossible": 0}
         for entree in self.entrees.values():
             statut = entree.get("statut", "echec")
             compte[statut] = compte.get(statut, 0) + 1

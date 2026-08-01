@@ -73,4 +73,31 @@ class TestResume:
         j.succes("https://instagram.com/reel/A", fiche="a.md")
         j.succes("https://instagram.com/reel/B", fiche="b.md")
         j.echec("https://instagram.com/reel/C", "boum")
-        assert j.resume() == {"ok": 2, "echec": 1}
+        assert j.resume() == {"ok": 2, "echec": 1, "impossible": 0}
+
+
+class TestImpossible:
+    """Un troisième état, distinct de l'échec : structurel, donc jamais retenté."""
+
+    URL = "https://instagram.com/p/DbJci7QEQF5"
+
+    def test_sort_de_la_file(self, tmp_path):
+        j = _journal(tmp_path)
+        j.impossible(self.URL, "carrousel photo — aucune donnée exploitable")
+        assert j.a_traiter([self.URL]) == []
+
+    def test_survit_au_rechargement(self, tmp_path):
+        _journal(tmp_path).impossible(self.URL, "carrousel photo")
+        assert _journal(tmp_path).a_traiter([self.URL]) == []
+
+    def test_compte_a_part(self, tmp_path):
+        j = _journal(tmp_path)
+        j.impossible(self.URL, "carrousel photo")
+        j.echec("https://instagram.com/reel/B", "429")
+        assert j.resume() == {"ok": 0, "echec": 1, "impossible": 1}
+
+    def test_un_echec_reste_retente(self, tmp_path):
+        # La distinction est tout l'intérêt : transitoire contre structurel.
+        j = _journal(tmp_path)
+        j.echec("https://instagram.com/reel/B", "429")
+        assert j.a_traiter(["https://instagram.com/reel/B"]) == ["https://instagram.com/reel/B"]
